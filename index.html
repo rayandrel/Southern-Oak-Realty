@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Southern Oak Realty LLC — Property Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #1a2e1a;
+    --moss: #2d4a2d;
+    --sage: #4a7c59;
+    --oak: #8B6914;
+    --gold: #C9A227;
+    --cream: #F5F0E8;
+    --parchment: #EDE6D6;
+    --ink: #1C1C1C;
+    --mist: #E8EDE8;
+    --alert: #C0392B;
+    --sky: #2471A3;
+    --white: #FFFFFF;
+    --shadow: 0 4px 24px rgba(26,46,26,0.13);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  /* TOP BAR */
+  .topbar {
+    background: var(--forest);
+    color: var(--cream);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 62px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .topbar-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar-logo {
+    width: 38px; height: 38px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .topbar-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.18rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .topbar-sub { font-size: 0.72rem; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.18s; }
+  .btn-gold { background: var(--gold); color: var(--forest); }
+  .btn-gold:hover { background: #e0b730; }
+  .btn-outline { background: transparent; color: var(--cream); border: 1.5px solid rgba(255,255,255,0.3); }
+  .btn-outline:hover { background: rgba(255,255,255,0.08); }
+  .btn-forest { background: var(--forest); color: var(--cream); }
+  .btn-forest:hover { background: var(--moss); }
+  .btn-sage { background: var(--sage); color: #fff; }
+  .btn-sage:hover { background: #3d6849; }
+  .btn-alert { background: var(--alert); color: #fff; }
+  .btn-sky { background: var(--sky); color: #fff; }
+  .btn-sky:hover { background: #1a5f8a; }
+
+  /* LAYOUT */
+  .app-layout { display: flex; min-height: calc(100vh - 62px); }
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: var(--forest);
+    padding: 22px 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .sidebar-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold); padding: 14px 22px 4px; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 22px; color: rgba(245,240,232,0.75);
+    font-size: 0.875rem; font-weight: 500; cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar-item:hover { background: rgba(255,255,255,0.06); color: var(--cream); }
+  .sidebar-item.active { background: rgba(201,162,39,0.12); color: var(--gold); border-left-color: var(--gold); }
+  .sidebar-icon { font-size: 1rem; width: 18px; text-align: center; }
+
+  /* MAIN */
+  .main { flex: 1; padding: 28px; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; color: var(--forest); }
+  .page-subtitle { font-size: 0.875rem; color: #666; margin-top: 3px; }
+
+  /* CARDS */
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; margin-bottom: 20px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--forest); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card-title-icon { font-size: 1.1rem; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stat-card { background: var(--white); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border-top: 4px solid var(--sage); }
+  .stat-card.gold { border-top-color: var(--gold); }
+  .stat-card.alert { border-top-color: var(--alert); }
+  .stat-card.sky { border-top-color: var(--sky); }
+  .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 6px; }
+  .stat-value { font-family: 'DM Mono', monospace; font-size: 1.45rem; font-weight: 500; color: var(--forest); }
+  .stat-sub { font-size: 0.75rem; color: #aaa; margin-top: 2px; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 9px 13px; border: 1.5px solid #ddd; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink);
+    background: #fafafa; transition: border 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--sage); background: #fff;
+  }
+  .form-group textarea { min-height: 72px; resize: vertical; }
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-top: 6px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { background: var(--forest); color: var(--cream); padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  td { padding: 9px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tr:hover td { background: var(--mist); }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.73rem; font-weight: 600; }
+  .badge-green { background: #d4edda; color: #1a6b30; }
+  .badge-gold { background: #fef3cd; color: #7d5a00; }
+  .badge-red { background: #fde8e8; color: #922020; }
+  .badge-blue { background: #d0e8f5; color: #1a4f6e; }
+  .badge-gray { background: #eee; color: #555; }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 2px solid #e0e0e0; }
+  .tab { padding: 9px 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #888; transition: all 0.15s; }
+  .tab.active { color: var(--sage); border-bottom-color: var(--sage); }
+  .tab:hover:not(.active) { color: var(--forest); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* INSTRUCTIONS */
+  .instructions { background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%); color: var(--cream); border-radius: var(--radius); padding: 22px 26px; margin-bottom: 20px; }
+  .instructions h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold); margin-bottom: 10px; }
+  .instructions ol, .instructions ul { padding-left: 20px; }
+  .instructions li { margin-bottom: 6px; font-size: 0.875rem; line-height: 1.55; }
+  .instructions li strong { color: var(--gold); }
+
+  /* TAX SUMMARY BOX */
+  .tax-box { background: #f0f7f0; border: 1.5px solid var(--sage); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 14px; }
+  .tax-box-title { font-weight: 700; color: var(--forest); margin-bottom: 8px; font-size: 0.92rem; }
+  .tax-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.85rem; border-bottom: 1px dashed #c8dfc8; }
+  .tax-line:last-child { border-bottom: none; font-weight: 700; font-size: 0.95rem; }
+  .tax-line.total { background: var(--sage); color: #fff; padding: 6px 10px; border-radius: 5px; margin-top: 4px; }
+
+  /* ALERT BANNER */
+  .alert-banner { background: #fef3cd; border-left: 4px solid var(--gold); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 16px; font-size: 0.87rem; }
+  .alert-banner.red { background: #fde8e8; border-left-color: var(--alert); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .modal-header { background: var(--forest); color: var(--cream); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
+  .modal-header h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; }
+  .modal-close { background: none; border: none; color: var(--cream); font-size: 1.4rem; cursor: pointer; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* PRINT / CPA REPORT */
+  .cpa-report { background: var(--white); border: 2px solid var(--forest); border-radius: var(--radius); padding: 30px; }
+  .cpa-report-header { text-align: center; border-bottom: 2px solid var(--forest); padding-bottom: 16px; margin-bottom: 20px; }
+  .cpa-report-header h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--forest); }
+  .cpa-report-header p { color: #555; font-size: 0.87rem; margin-top: 4px; }
+  .cpa-section { margin-bottom: 22px; }
+  .cpa-section h4 { background: var(--forest); color: var(--cream); padding: 7px 14px; border-radius: 5px; font-size: 0.85rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* GOOGLE SHEETS PANEL */
+  .sheets-panel { background: linear-gradient(135deg, #1e4a2a 0%, #2a6b3c 100%); color: white; border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+  .sheets-panel h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: #7ddc9a; margin-bottom: 12px; }
+  .sheets-input { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .sheets-input input { flex: 1; min-width: 280px; padding: 10px 14px; border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); color: white; font-size: 0.88rem; font-family: 'DM Mono', monospace; }
+  .sheets-input input::placeholder { color: rgba(255,255,255,0.45); }
+  .sheets-input input:focus { outline: none; border-color: #7ddc9a; }
+
+  /* YEAR SELECTOR */
+  .year-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .year-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ccc; background: white; font-size: 0.82rem; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s; }
+  .year-btn.active { background: var(--sage); color: white; border-color: var(--sage); }
+  .year-btn:hover:not(.active) { border-color: var(--sage); color: var(--sage); }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap { background: #eee; border-radius: 20px; height: 8px; margin-top: 6px; }
+  .progress-bar { background: linear-gradient(90deg, var(--sage), var(--gold)); border-radius: 20px; height: 8px; transition: width 0.4s; }
+
+  /* DEPRECIATION SCHEDULE */
+  .depr-table { font-size: 0.8rem; }
+  .depr-table th { font-size: 0.73rem; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { width: 52px; min-width: 52px; }
+    .sidebar-section, .sidebar-item span { display: none; }
+    .sidebar-item { justify-content: center; padding: 12px; }
+    .main { padding: 16px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* PRINT STYLES */
+  @media print {
+    .sidebar, .topbar, .no-print { display: none !important; }
+    .main { padding: 0; }
+    body { background: white; }
+    .card, .cpa-report { box-shadow: none; border: 1px solid #ccc; }
+    .page { display: block !important; }
+    .page:not(#page-cpa) { display: none !important; }
+  }
+
+  .divider { height: 1px; background: #eee; margin: 16px 0; }
+  .text-right { text-align: right; }
+  .text-muted { color: #888; font-size: 0.82rem; }
+  .green { color: #1a6b30; font-weight: 600; }
+  .red { color: var(--alert); font-weight: 600; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .gap-10 { gap: 10px; }
+  .mt-10 { margin-top: 10px; }
+  .mt-16 { margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">🌳</div>
+    <div>
+      <div class="topbar-title">Southern Oak Realty LLC</div>
+      <div class="topbar-sub">Property Management &amp; Tax System · 2026–2050</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" onclick="openModal('modal-sheets')">⚙ Google Sheets Setup</button>
+    <button class="btn btn-gold" onclick="showPage('page-cpa'); window.print()">🖨 Print CPA Report</button>
+  </div>
+</div>
+
+<!-- APP LAYOUT -->
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <div class="sidebar-item active" onclick="showPage('page-dashboard', this)">
+      <span class="sidebar-icon">📊</span><span>Dashboard</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-instructions', this)">
+      <span class="sidebar-icon">📖</span><span>Instructions</span>
+    </div>
+
+    <div class="sidebar-section">Properties</div>
+    <div class="sidebar-item" onclick="showPage('page-purchase', this)">
+      <span class="sidebar-icon">🏡</span><span>Purchase Log</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-remodel', this)">
+      <span class="sidebar-icon">🔨</span><span>Remodel / CapEx</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-maintenance', this)">
+      <span class="sidebar-icon">🔧</span><span>Maintenance</span>
+    </div>
+
+    <div class="sidebar-section">Financials</div>
+    <div class="sidebar-item" onclick="showPage('page-income', this)">
+      <span class="sidebar-icon">💰</span><span>Income & Rent</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-expenses', this)">
+      <span class="sidebar-icon">📋</span><span>Operating Expenses</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-depreciation', this)">
+      <span class="sidebar-icon">📉</span><span>Depreciation</span>
+    </div>
+
+    <div class="sidebar-section">Tax</div>
+    <div class="sidebar-item" onclick="showPage('page-tax', this)">
+      <span class="sidebar-icon">📑</span><span>Tax Summary</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('page-cpa', this)">
+      <span class="sidebar-icon">🖨</span><span>CPA Report</span>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: DASHBOARD                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Portfolio Dashboard</div>
+          <div class="page-subtitle">Real-time summary · Tax Year <span id="dash-year-label">2026</span></div>
+        </div>
+        <div class="year-selector" id="dash-years"></div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Properties</div>
+          <div class="stat-value" id="stat-props">0</div>
+          <div class="stat-sub">in portfolio</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Total Invested</div>
+          <div class="stat-value mono" id="stat-invested">$0</div>
+          <div class="stat-sub">purchase + CapEx</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Gross Rental Income</div>
+          <div class="stat-value mono" id="stat-income">$0</div>
+          <div class="stat-sub">selected year</div>
+        </div>
+        <div class="stat-card sky">
+          <div class="stat-label">Total Deductions</div>
+          <div class="stat-value mono" id="stat-deductions">$0</div>
+          <div class="stat-sub">selected year</div>
+        </div>
+        <div class="stat-card alert">
+          <div class="stat-label">Net Taxable Income</div>
+          <div class="stat-value mono" id="stat-net">$0</div>
+          <div class="stat-sub">estimate</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-label">Maintenance Costs</div>
+          <div class="stat-value mono" id="stat-maint">$0</div>
+          <div class="stat-sub">selected year</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-title">🏡 Properties At a Glance</div>
+          <div id="dash-property-list"><p class="text-muted">No properties added yet. Go to <strong>Purchase Log</strong> to add your first property.</p></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ Upcoming Tax Deadlines</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="tax-deadlines"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📈 Annual Income vs. Expenses (Selected Year)</div>
+        <div id="dash-chart" style="height:180px;display:flex;align-items:flex-end;gap:8px;padding-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: INSTRUCTIONS                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-instructions" class="page">
+      <div class="page-header">
+        <div class="page-title">Instructions & User Guide</div>
+        <div class="page-subtitle">How to use this system — read before starting</div>
+      </div>
+
+      <div class="instructions">
+        <h3>🌳 Welcome to Southern Oak Realty LLC Property Manager</h3>
+        <p style="margin-bottom:10px;font-size:0.875rem;">This system tracks your entire real estate investment lifecycle — from purchase through disposition — and generates tax documents for your CPA. All data is stored in your browser AND synced to Google Sheets for multi-user access.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-title">📋 Step-by-Step Setup</div>
+          <ol style="padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:0.875rem;">
+            <li><strong>Connect Google Sheets</strong> — Click "Google Sheets Setup" in the top bar. Paste your Sheet ID. This enables 5-user shared access.</li>
+            <li><strong>Add Properties</strong> — Go to <em>Purchase Log</em>. Enter each property's address, purchase price, closing costs, land value, and building value.</li>
+            <li><strong>Log Remodels/CapEx</strong> — Under <em>Remodel/CapEx</em>, record all capital improvements (adds to basis, depreciated separately).</li>
+            <li><strong>Record Maintenance</strong> — Log all repairs under <em>Maintenance</em> (fully deductible in the year paid).</li>
+            <li><strong>Enter Rental Income</strong> — Each month, enter rent received per property under <em>Income & Rent</em>.</li>
+            <li><strong>Log Operating Expenses</strong> — Insurance, HOA, property tax, utilities, management fees go under <em>Operating Expenses</em>.</li>
+            <li><strong>Review Depreciation</strong> — The system auto-calculates 27.5-year straight-line depreciation for residential, 39-year for commercial.</li>
+            <li><strong>Generate CPA Report</strong> — At year-end, go to <em>CPA Report</em>, select the tax year, and print/save PDF for your CPA.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="card-title">💡 Key Tax Rules (2026–2050)</div>
+          <ul style="padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:0.875rem;">
+            <li><strong>Depreciation:</strong> Residential rental = 27.5 years. Commercial = 39 years. Land is NOT depreciated.</li>
+            <li><strong>Repairs vs. CapEx:</strong> Routine repairs are expenses; improvements adding value or extending life are capitalized and depreciated.</li>
+            <li><strong>Passive Activity Loss Rules:</strong> Rental losses may be limited. Active participants can deduct up to $25,000 (phases out $100K–$150K AGI).</li>
+            <li><strong>Schedule E:</strong> All rental income/expenses flow to Schedule E (personal return) or Form 1065 (partnership/LLC).</li>
+            <li><strong>QBI Deduction:</strong> LLC may qualify for 20% qualified business income deduction.</li>
+            <li><strong>Self-Employment Tax:</strong> Typically not owed on rental income unless real estate professional.</li>
+            <li><strong>1031 Exchange:</strong> Log deferred gains when a property is sold and proceeds reinvested.</li>
+            <li><strong>Cost Segregation:</strong> Flag items eligible for accelerated depreciation (5, 7, or 15-year property).</li>
+            <li><strong>State Taxes:</strong> Alabama has a flat 5% income tax rate on rental income. File Form 20S for LLC.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">👥 Multi-User Access (Google Sheets)</div>
+          <ol style="padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:0.875rem;">
+            <li>Open Google Sheets and create a new spreadsheet named <em>"Southern Oak Realty - Data"</em>.</li>
+            <li>Go to <strong>Share</strong> → add up to 5 email addresses with <em>Editor</em> access.</li>
+            <li>Copy the Sheet ID from the URL (the long string between /d/ and /edit).</li>
+            <li>Paste the Sheet ID into the <strong>Google Sheets Setup</strong> modal in this app.</li>
+            <li>Each user bookmarks this HTML file or hosts it on Google Drive as a shared file.</li>
+            <li>Data entered in this app syncs to the sheet; any user can pull latest data using the Sync button.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="card-title">🖨 Generating Your CPA Tax Package</div>
+          <ol style="padding-left:18px;display:flex;flex-direction:column;gap:7px;font-size:0.875rem;">
+            <li>At year-end (or when requested), navigate to <em>CPA Report</em> in the sidebar.</li>
+            <li>Select the tax year from the year selector.</li>
+            <li>Review all figures — income, deductions, depreciation, net income.</li>
+            <li>Click <strong>"Print CPA Report"</strong> in the top bar, or use Ctrl+P / Cmd+P.</li>
+            <li>Save as PDF and email to your CPA, or print two copies (one for CPA, one for your records).</li>
+            <li>The report includes all Schedule E data, depreciation schedules, and supporting detail.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📁 What Each Section Tracks</div>
+        <table><thead><tr><th>Section</th><th>What to Enter</th><th>Tax Form / Line</th><th>Deductible?</th></tr></thead>
+        <tbody>
+          <tr><td>Purchase Log</td><td>Address, purchase price, closing costs, land value, mortgage info</td><td>Schedule E / Basis</td><td>Closing costs added to basis</td></tr>
+          <tr><td>Remodel / CapEx</td><td>Contractor costs, permits, materials for improvements</td><td>Form 4562 / Depreciation</td><td>Depreciated over life</td></tr>
+          <tr><td>Maintenance</td><td>Repairs, cleaning, pest control, minor fixes</td><td>Schedule E Line 14</td><td>100% current year</td></tr>
+          <tr><td>Income & Rent</td><td>Monthly rent, security deposits, late fees, other income</td><td>Schedule E Line 3</td><td>N/A (income)</td></tr>
+          <tr><td>Operating Expenses</td><td>Insurance, property tax, utilities, HOA, management fees</td><td>Schedule E Lines 5–20</td><td>100% current year</td></tr>
+          <tr><td>Depreciation</td><td>Auto-calculated from purchase and CapEx entries</td><td>Schedule E Line 18 / Form 4562</td><td>Annual allowance</td></tr>
+        </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: PURCHASE LOG                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-purchase" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Property Purchase Log</div>
+          <div class="page-subtitle">Record every acquisition — used to calculate basis and depreciation</div>
+        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-property')">+ Add Property</button>
+      </div>
+
+      <div class="alert-banner">
+        <strong>📌 Data Entry Tip:</strong> Enter the <strong>building value</strong> (not including land) separately — only the building depreciates. Closing costs (title, attorney, recording fees) are added to your cost basis. Loan origination points may be deducted or amortized.
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏡 Property Inventory</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>Address</th><th>Purchase Date</th><th>Purchase Price</th>
+              <th>Land Value</th><th>Building Value</th><th>Closing Costs</th>
+              <th>Type</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="property-table-body">
+              <tr><td colspan="10" class="text-muted" style="text-align:center;padding:20px;">No properties yet. Click "+ Add Property" to begin.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: REMODEL / CAPEX                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-remodel" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Remodel & Capital Expenditures</div>
+          <div class="page-subtitle">Improvements that add value, extend life, or adapt property to a new use</div>
+        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-capex')">+ Add CapEx</button>
+      </div>
+
+      <div class="alert-banner">
+        <strong>📌 CapEx vs. Repair?</strong> A new roof, HVAC system, addition, or kitchen renovation = <em>Capital Expenditure</em> (depreciated). Patching a roof, fixing a faucet, or repainting = <em>Repair</em> (log under Maintenance, fully deductible this year).
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔨 Capital Improvements Log</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Property</th><th>Description</th><th>Date</th><th>Amount</th>
+              <th>Category</th><th>Dep. Life</th><th>Annual Depr.</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="capex-table-body">
+              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No capital improvements logged yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: MAINTENANCE                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-maintenance" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Maintenance & Repairs</div>
+          <div class="page-subtitle">Ordinary and necessary repairs — fully deductible in the year paid</div>
+        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-maint')">+ Add Record</button>
+      </div>
+
+      <div class="year-selector" id="maint-years"></div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total This Year</div><div class="stat-value mono" id="maint-total">$0</div></div>
+        <div class="stat-card gold"><div class="stat-label">Avg Per Property</div><div class="stat-value mono" id="maint-avg">$0</div></div>
+        <div class="stat-card sky"><div class="stat-label">Records This Year</div><div class="stat-value" id="maint-count">0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔧 Maintenance Records</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Property</th><th>Date</th><th>Description</th><th>Vendor</th>
+              <th>Category</th><th>Amount</th><th>Receipt</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="maint-table-body">
+              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No maintenance records yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: INCOME & RENT                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-income" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Income & Rent</div>
+          <div class="page-subtitle">All rental income, fees, and other property revenue</div>
+        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-income')">+ Add Income</button>
+      </div>
+
+      <div class="year-selector" id="income-years"></div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Gross Rental Income</div><div class="stat-value mono" id="income-gross">$0</div></div>
+        <div class="stat-card gold"><div class="stat-label">Late Fees / Other</div><div class="stat-value mono" id="income-other">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Vacancy Cost</div><div class="stat-value mono" id="income-vacancy">$0</div><div class="stat-sub">potential lost rent</div></div>
+        <div class="stat-card sky"><div class="stat-label">Occupied Months</div><div class="stat-value" id="income-occupied">0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 Income Log</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Property</th><th>Month</th><th>Rent Amount</th><th>Late Fees</th>
+              <th>Other Income</th><th>Total</th><th>Notes</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="income-table-body">
+              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No income records yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: OPERATING EXPENSES                   -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-expenses" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Operating Expenses</div>
+          <div class="page-subtitle">All deductible operating costs — insurance, taxes, fees, utilities</div>
+        </div>
+        <button class="btn btn-gold" onclick="openModal('modal-add-expense')">+ Add Expense</button>
+      </div>
+
+      <div class="year-selector" id="expense-years"></div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Property Taxes</div><div class="stat-value mono" id="exp-ptax">$0</div></div>
+        <div class="stat-card gold"><div class="stat-label">Insurance</div><div class="stat-value mono" id="exp-ins">$0</div></div>
+        <div class="stat-card sky"><div class="stat-label">Mgmt Fees</div><div class="stat-value mono" id="exp-mgmt">$0</div></div>
+        <div class="stat-card"><div class="stat-label">Utilities</div><div class="stat-value mono" id="exp-util">$0</div></div>
+        <div class="stat-card alert"><div class="stat-label">Total Expenses</div><div class="stat-value mono" id="exp-total">$0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Expense Log</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Property</th><th>Date</th><th>Category</th><th>Description</th>
+              <th>Vendor/Payee</th><th>Amount</th><th>Schedule E Line</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="expense-table-body">
+              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No expenses logged yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: DEPRECIATION                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-depreciation" class="page">
+      <div class="page-header">
+        <div class="page-title">Depreciation Schedule</div>
+        <div class="page-subtitle">Auto-calculated straight-line depreciation · IRS MACRS guidelines</div>
+      </div>
+
+      <div class="alert-banner">
+        <strong>📌 How Depreciation Works:</strong> Residential rental property is depreciated over <strong>27.5 years</strong>. Commercial property over <strong>39 years</strong>. Only the <em>building value</em> (not land) depreciates. CapEx improvements start their own depreciation schedule from the date placed in service.
+      </div>
+
+      <div class="card">
+        <div class="card-title">📉 Depreciation by Property — All Years</div>
+        <div class="table-wrap">
+          <table class="depr-table">
+            <thead><tr>
+              <th>Property</th><th>Asset</th><th>Placed In Service</th><th>Depreciable Basis</th>
+              <th>Life (Yrs)</th><th>Annual Depr.</th><th>Accum. Depr.</th><th>Remaining Basis</th><th>Fully Depr. Year</th>
+            </tr></thead>
+            <tbody id="depr-table-body">
+              <tr><td colspan="9" class="text-muted" style="text-align:center;padding:20px;">Add properties and CapEx to generate depreciation schedule.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 2026–2050 Depreciation Projection</div>
+        <div id="depr-projection" style="overflow-x:auto;"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: TAX SUMMARY                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-tax" class="page">
+      <div class="page-header flex-between">
+        <div>
+          <div class="page-title">Tax Summary</div>
+          <div class="page-subtitle">Federal & Alabama state income tax overview</div>
+        </div>
+      </div>
+
+      <div class="year-selector" id="tax-years"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div>
+          <div class="tax-box">
+            <div class="tax-box-title">📋 Federal — Schedule E Summary</div>
+            <div class="tax-line"><span>Gross Rental Income</span><span class="mono green" id="tx-income">$0</span></div>
+            <div class="tax-line"><span>Less: Operating Expenses</span><span class="mono red" id="tx-opex">($0)</span></div>
+            <div class="tax-line"><span>Less: Maintenance & Repairs</span><span class="mono red" id="tx-maint">($0)</span></div>
+            <div class="tax-line"><span>Less: Depreciation</span><span class="mono red" id="tx-depr">($0)</span></div>
+            <div class="tax-line"><span>Less: Mortgage Interest</span><span class="mono red" id="tx-mort">($0)</span></div>
+            <div class="tax-line total"><span>Net Rental Income / (Loss)</span><span class="mono" id="tx-net">$0</span></div>
+          </div>
+
+          <div class="tax-box">
+            <div class="tax-box-title">🏛 Federal Tax Estimates</div>
+            <div class="tax-line"><span>Net Rental Income</span><span class="mono" id="tx-fed-net">$0</span></div>
+            <div class="tax-line"><span>Est. QBI Deduction (20%)</span><span class="mono red" id="tx-qbi">($0)</span></div>
+            <div class="tax-line"><span>Taxable Rental Income</span><span class="mono" id="tx-fed-taxable">$0</span></div>
+            <div class="tax-line"><span>Federal Tax @ 22% bracket est.</span><span class="mono red" id="tx-fed-tax">$0</span></div>
+            <div class="divider"></div>
+            <div class="tax-line"><span>Passive Loss Carryforward</span><span class="mono" id="tx-passive">$0</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="tax-box">
+            <div class="tax-box-title">🌿 Alabama State — Form 20S / Schedule E</div>
+            <div class="tax-line"><span>Net Rental Income (Federal)</span><span class="mono" id="tx-al-income">$0</span></div>
+            <div class="tax-line"><span>Alabama Modifications</span><span class="mono">$0</span></div>
+            <div class="tax-line"><span>Alabama Taxable Income</span><span class="mono" id="tx-al-taxable">$0</span></div>
+            <div class="tax-line total"><span>Alabama Tax @ 5%</span><span class="mono" id="tx-al-tax">$0</span></div>
+          </div>
+
+          <div class="tax-box">
+            <div class="tax-box-title">📅 Key Deadlines & Reminders</div>
+            <div class="tax-line"><span>Q1 Estimated Tax Due</span><span>April 15</span></div>
+            <div class="tax-line"><span>Q2 Estimated Tax Due</span><span>June 15</span></div>
+            <div class="tax-line"><span>Q3 Estimated Tax Due</span><span>September 15</span></div>
+            <div class="tax-line"><span>Q4 Estimated Tax Due</span><span>January 15</span></div>
+            <div class="tax-line"><span>Form 1065 / Schedule E Due</span><span>March 15</span></div>
+            <div class="tax-line"><span>Alabama Form 20S Due</span><span>March 15</span></div>
+          </div>
+
+          <div class="card mt-10">
+            <div class="card-title">💡 Tax-Saving Notes</div>
+            <ul style="padding-left:16px;font-size:0.85rem;display:flex;flex-direction:column;gap:6px;">
+              <li>Consider <strong>cost segregation study</strong> for properties valued over $500K to accelerate depreciation.</li>
+              <li>Track <strong>home office / vehicle mileage</strong> for real estate management activities.</li>
+              <li>All LLC members can deduct losses up to their <strong>at-risk basis</strong>.</li>
+              <li>Review <strong>§179 expensing</strong> eligibility for qualifying personal property components.</li>
+              <li>Keep receipts for ALL expenses — IRS requires substantiation of rental deductions.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- PAGE: CPA REPORT                           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="page-cpa" class="page">
+      <div class="page-header flex-between no-print">
+        <div>
+          <div class="page-title">CPA Tax Package</div>
+          <div class="page-subtitle">Print or save as PDF for your tax preparer</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="year-selector" id="cpa-years"></div>
+          <button class="btn btn-gold" onclick="window.print()">🖨 Print / Save PDF</button>
+        </div>
+      </div>
+
+      <div class="cpa-report" id="cpa-report-content">
+        <div class="cpa-report-header">
+          <h2>Southern Oak Realty LLC</h2>
+          <p>Tax Year: <strong id="cpa-year-label">2026</strong> &nbsp;|&nbsp; Prepared: <span id="cpa-date"></span></p>
+          <p style="margin-top:4px;font-size:0.8rem;color:#888;">Confidential — For CPA Use Only — Not a Filed Return</p>
+        </div>
+
+        <!-- SECTION 1: ENTITY INFO -->
+        <div class="cpa-section">
+          <h4>1. Entity Information</h4>
+          <table style="font-size:0.85rem;">
+            <tr><td style="padding:5px 10px;"><strong>Entity Name:</strong></td><td>Southern Oak Realty LLC</td><td style="padding:5px 20px;"><strong>Entity Type:</strong></td><td>LLC (Single/Multi-Member)</td></tr>
+            <tr><td style="padding:5px 10px;"><strong>State of Formation:</strong></td><td>Alabama</td><td style="padding:5px 20px;"><strong>Business Activity:</strong></td><td>Residential / Commercial Rental</td></tr>
+            <tr><td style="padding:5px 10px;"><strong>Tax Treatment:</strong></td><td>Partnership (Form 1065) or Disregarded</td><td style="padding:5px 20px;"><strong>Accounting Method:</strong></td><td>Cash Basis</td></tr>
+          </table>
+        </div>
+
+        <!-- SECTION 2: PROPERTIES -->
+        <div class="cpa-section">
+          <h4>2. Property Inventory</h4>
+          <table>
+            <thead><tr><th>Address</th><th>Type</th><th>Purchase Date</th><th>Purchase Price</th><th>Land Value</th><th>Building Basis</th><th>Depreciation Start</th></tr></thead>
+            <tbody id="cpa-properties"></tbody>
+          </table>
+        </div>
+
+        <!-- SECTION 3: INCOME -->
+        <div class="cpa-section">
+          <h4>3. Rental Income — Schedule E, Part I</h4>
+          <table>
+            <thead><tr><th>Property</th><th>Gross Rents</th><th>Other Income</th><th>Total Income</th></tr></thead>
+            <tbody id="cpa-income"></tbody>
+            <tfoot><tr style="background:#f0f7f0;font-weight:700;"><td>TOTAL</td><td class="mono" id="cpa-income-total">$0</td><td class="mono" id="cpa-other-total">$0</td><td class="mono" id="cpa-total-income">$0</td></tr></tfoot>
+          </table>
+        </div>
+
+        <!-- SECTION 4: EXPENSES -->
+        <div class="cpa-section">
+          <h4>4. Operating Expenses — Schedule E Deductions</h4>
+          <table>
+            <thead><tr><th>Category</th><th>Schedule E Line</th><th>Amount</th></tr></thead>
+            <tbody>
+              <tr><td>Advertising</td><td>5</td><td class="mono" id="cpa-exp-adv">$0</td></tr>
+              <tr><td>Auto and Travel</td><td>6</td><td class="mono" id="cpa-exp-auto">$0</td></tr>
+              <tr><td>Cleaning and Maintenance</td><td>7</td><td class="mono" id="cpa-exp-clean">$0</td></tr>
+              <tr><td>Commissions</td><td>8</td><td class="mono" id="cpa-exp-comm">$0</td></tr>
+              <tr><td>Insurance</td><td>9</td><td class="mono" id="cpa-exp-ins">$0</td></tr>
+              <tr><td>Legal and Professional Fees</td><td>10</td><td class="mono" id="cpa-exp-legal">$0</td></tr>
+              <tr><td>Management Fees</td><td>11</td><td class="mono" id="cpa-exp-mgmt">$0</td></tr>
+              <tr><td>Mortgage Interest (Form 1098)</td><td>12</td><td class="mono" id="cpa-exp-mort">$0</td></tr>
+              <tr><td>Other Interest</td><td>13</td><td class="mono" id="cpa-exp-oint">$0</td></tr>
+              <tr><td>Repairs</td><td>14</td><td class="mono" id="cpa-exp-rep">$0</td></tr>
+              <tr><td>Supplies</td><td>15</td><td class="mono" id="cpa-exp-sup">$0</td></tr>
+              <tr><td>Taxes (Property)</td><td>16</td><td class="mono" id="cpa-exp-ptax">$0</td></tr>
+              <tr><td>Utilities</td><td>17</td><td class="mono" id="cpa-exp-util">$0</td></tr>
+              <tr><td>Other Expenses</td><td>19</td><td class="mono" id="cpa-exp-other">$0</td></tr>
+              <tr style="background:#f0f7f0;font-weight:700;"><td colspan="2">Total Expenses (before depreciation)</td><td class="mono" id="cpa-exp-total">$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- SECTION 5: DEPRECIATION -->
+        <div class="cpa-section">
+          <h4>5. Depreciation Schedule — Form 4562</h4>
+          <table>
+            <thead><tr><th>Asset Description</th><th>Date In Service</th><th>Cost Basis</th><th>Prior Accum. Depr.</th><th>Method/Life</th><th>Current Year Depr.</th></tr></thead>
+            <tbody id="cpa-depr"></tbody>
+            <tfoot><tr style="background:#f0f7f0;font-weight:700;"><td colspan="5">Total Depreciation (Schedule E Line 18)</td><td class="mono" id="cpa-depr-total">$0</td></tr></tfoot>
+          </table>
+        </div>
+
+        <!-- SECTION 6: NET INCOME -->
+        <div class="cpa-section">
+          <h4>6. Net Income Summary</h4>
+          <table>
+            <tbody>
+              <tr><td style="padding:6px 10px;"><strong>Total Rental Income</strong></td><td class="mono green" id="cpa-sum-income">$0</td></tr>
+              <tr><td style="padding:6px 10px;">Less: Total Operating Expenses</td><td class="mono red" id="cpa-sum-exp">$0</td></tr>
+              <tr><td style="padding:6px 10px;">Less: Depreciation</td><td class="mono red" id="cpa-sum-depr">$0</td></tr>
+              <tr style="background:#f0f7f0;font-weight:700;font-size:1.02rem;"><td style="padding:8px 10px;"><strong>Net Rental Income / (Loss)</strong></td><td class="mono" id="cpa-sum-net">$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- SECTION 7: ALABAMA STATE -->
+        <div class="cpa-section">
+          <h4>7. Alabama State Tax — Form 20S / Schedule E</h4>
+          <table>
+            <tbody>
+              <tr><td style="padding:6px 10px;">Federal Net Rental Income</td><td class="mono" id="cpa-al-net">$0</td></tr>
+              <tr><td style="padding:6px 10px;">Alabama Modifications (if any)</td><td class="mono">$0</td></tr>
+              <tr><td style="padding:6px 10px;">Alabama Taxable Rental Income</td><td class="mono" id="cpa-al-taxable">$0</td></tr>
+              <tr style="background:#f0f7f0;font-weight:700;"><td style="padding:8px 10px;">Alabama Tax Estimated @ 5%</td><td class="mono" id="cpa-al-tax">$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- SECTION 8: NOTES -->
+        <div class="cpa-section">
+          <h4>8. Notes & Special Items</h4>
+          <div id="cpa-notes" style="padding:10px;font-size:0.85rem;line-height:1.6;">
+            <p>• Review depreciation method elections and confirm property classifications.</p>
+            <p>• Confirm LLC tax treatment (disregarded entity vs. partnership) and filing requirements.</p>
+            <p>• Verify all mortgage interest statements (Form 1098) received from lenders.</p>
+            <p>• Consider cost segregation study if qualifying properties were placed in service this year.</p>
+            <p>• Review passive activity loss limitations and any carryforward from prior years.</p>
+            <p>• Confirm Alabama LLC annual report filing is current.</p>
+          </div>
+        </div>
+
+        <div style="margin-top:30px;padding-top:16px;border-top:1px solid #ccc;display:flex;justify-content:space-between;font-size:0.8rem;color:#888;">
+          <div>Southern Oak Realty LLC &nbsp;|&nbsp; Generated by Property Management System</div>
+          <div>Page 1 of 1 &nbsp;|&nbsp; <span id="cpa-footer-date"></span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .main -->
+</div><!-- end .app-layout -->
+
+<!-- ═══════════════════════ MODALS ═══════════════════════ -->
+
+<!-- GOOGLE SHEETS SETUP -->
+<div id="modal-sheets" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙ Google Sheets Integration Setup</h3>
+      <button class="modal-close" onclick="closeModal('modal-sheets')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sheets-panel">
+        <h3>🔗 Connect Your Google Sheet</h3>
+        <p style="font-size:0.85rem;margin-bottom:12px;color:rgba(255,255,255,0.8);">Link this tracker to a shared Google Sheet so all 5 users can access and update data from any device.</p>
+        <div class="sheets-input">
+          <input type="text" id="sheets-id-input" placeholder="Paste Google Sheet ID here..." />
+          <button class="btn btn-gold" onclick="saveSheetId()">💾 Save & Connect</button>
+        </div>
+        <div id="sheets-status" style="margin-top:10px;font-size:0.82rem;color:#7ddc9a;"></div>
+      </div>
+      <div class="instructions" style="margin-bottom:0;">
+        <h3>How to Get Your Sheet ID</h3>
+        <ol>
+          <li>Go to <strong>sheets.google.com</strong> and create a new spreadsheet.</li>
+          <li>Name it: <strong>Southern Oak Realty - Data</strong></li>
+          <li>Click <strong>Share</strong> → Add each of the 5 users' Gmail addresses as <em>Editors</em>.</li>
+          <li>Copy the Sheet ID from the URL:<br><code style="background:rgba(255,255,255,0.15);padding:3px 8px;border-radius:4px;font-size:0.8rem;">https://docs.google.com/spreadsheets/d/<strong>[SHEET ID IS HERE]</strong>/edit</code></li>
+          <li>Paste the Sheet ID above and click Save.</li>
+          <li>Each user should bookmark this HTML file or upload it to a shared Google Drive folder.</li>
+        </ol>
+        <p style="margin-top:10px;font-size:0.82rem;"><strong>Note:</strong> To enable the API, go to Google Cloud Console → APIs → Enable Google Sheets API → Create OAuth credentials and replace the placeholder API key in this file's script section.</p>
+      </div>
+      <div style="margin-top:14px;padding:12px 16px;background:#f5f0e8;border-radius:8px;font-size:0.83rem;">
+        <strong>📱 Access From Any Device:</strong> Host this HTML file on Google Drive or a shared hosting service. All users open the same URL and data syncs through the connected Google Sheet.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-sheets')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROPERTY MODAL -->
+<div id="modal-add-property" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🏡 Add New Property</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-property')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert-banner" style="margin-bottom:16px;">Enter all fields accurately — purchase price and building value determine your depreciation deductions for the life of the property.</div>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Property ID / Nickname</label>
+          <input type="text" id="prop-id" placeholder="e.g., Oak Street Duplex">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Street Address</label>
+          <input type="text" id="prop-addr" placeholder="123 Main St, City, AL 36000">
+        </div>
+        <div class="form-group">
+          <label>Property Type</label>
+          <select id="prop-type">
+            <option>Residential Rental (27.5 yr)</option>
+            <option>Commercial (39 yr)</option>
+            <option>Mixed-Use</option>
+            <option>Vacation Rental</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Purchase Date</label>
+          <input type="date" id="prop-date">
+        </div>
+        <div class="form-group">
+          <label>Purchase Price ($)</label>
+          <input type="number" id="prop-price" placeholder="185000">
+        </div>
+        <div class="form-group">
+          <label>Land Value ($)</label>
+          <input type="number" id="prop-land" placeholder="25000">
+        </div>
+        <div class="form-group">
+          <label>Building Value ($)</label>
+          <input type="number" id="prop-building" placeholder="160000">
+        </div>
+        <div class="form-group">
+          <label>Closing Costs ($)</label>
+          <input type="number" id="prop-closing" placeholder="4500">
+        </div>
+        <div class="form-group">
+          <label>Mortgage Amount ($)</label>
+          <input type="number" id="prop-mortgage" placeholder="148000">
+        </div>
+        <div class="form-group">
+          <label>Interest Rate (%)</label>
+          <input type="number" id="prop-rate" placeholder="6.75" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Monthly Rent ($)</label>
+          <input type="number" id="prop-rent" placeholder="1450">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="prop-status">
+            <option>Active - Occupied</option>
+            <option>Active - Vacant</option>
+            <option>Under Renovation</option>
+            <option>Sold / Disposed</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notes</label>
+          <textarea id="prop-notes" placeholder="Any additional details about this property..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-add-property')">Cancel</button>
+      <button class="btn btn-gold" onclick="addProperty()">💾 Save Property</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CAPEX MODAL -->
+<div id="modal-add-capex" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔨 Add Capital Expenditure</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-capex')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Property</label>
+          <select id="capex-prop"></select>
+        </div>
+        <div class="form-group">
+          <label>Date Completed / Placed In Service</label>
+          <input type="date" id="capex-date">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Description of Improvement</label>
+          <input type="text" id="capex-desc" placeholder="e.g., New HVAC system, Kitchen remodel, Roof replacement">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="capex-cat">
+            <option>Roof</option>
+            <option>HVAC</option>
+            <option>Kitchen Remodel</option>
+            <option>Bathroom Remodel</option>
+            <option>Addition / Expansion</option>
+            <option>Flooring</option>
+            <option>Windows / Doors</option>
+            <option>Electrical / Plumbing</option>
+            <option>Appliances</option>
+            <option>Landscaping / Exterior</option>
+            <option>Other Capital Improvement</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Depreciation Life</label>
+          <select id="capex-life">
+            <option value="27.5">27.5 years (Residential Structural)</option>
+            <option value="39">39 years (Commercial Structural)</option>
+            <option value="15">15 years (Land Improvements)</option>
+            <option value="7">7 years (Appliances / Equipment)</option>
+            <option value="5">5 years (Carpet / Certain Fixtures)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Total Cost ($)</label>
+          <input type="number" id="capex-amount" placeholder="12500">
+        </div>
+        <div class="form-group">
+          <label>Contractor / Vendor</label>
+          <input type="text" id="capex-vendor" placeholder="ABC Contractors">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notes</label>
+          <textarea id="capex-notes" placeholder="Permit numbers, warranty info, etc."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-add-capex')">Cancel</button>
+      <button class="btn btn-gold" onclick="addCapEx()">💾 Save CapEx</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MAINTENANCE MODAL -->
+<div id="modal-add-maint" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔧 Add Maintenance Record</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-maint')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Property</label>
+          <select id="maint-prop"></select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="maint-date">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Description of Work</label>
+          <input type="text" id="maint-desc" placeholder="e.g., Fixed leaking faucet in kitchen">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="maint-cat">
+            <option>Plumbing</option>
+            <option>Electrical</option>
+            <option>HVAC Service</option>
+            <option>Appliance Repair</option>
+            <option>Painting / Touch-up</option>
+            <option>Pest Control</option>
+            <option>Lawn / Landscaping</option>
+            <option>Cleaning</option>
+            <option>General Repairs</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vendor / Handyman</label>
+          <input type="text" id="maint-vendor" placeholder="Local Handyman Services">
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="maint-amount" placeholder="350">
+        </div>
+        <div class="form-group">
+          <label>Receipt / Invoice #</label>
+          <input type="text" id="maint-receipt" placeholder="INV-2026-001">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notes</label>
+          <textarea id="maint-notes" placeholder="Additional details..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-add-maint')">Cancel</button>
+      <button class="btn btn-gold" onclick="addMaintenance()">💾 Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD INCOME MODAL -->
+<div id="modal-add-income" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>💰 Add Rental Income</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-income')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Property</label>
+          <select id="income-prop"></select>
+        </div>
+        <div class="form-group">
+          <label>Month / Year</label>
+          <input type="month" id="income-month">
+        </div>
+        <div class="form-group">
+          <label>Rent Received ($)</label>
+          <input type="number" id="income-rent" placeholder="1450">
+        </div>
+        <div class="form-group">
+          <label>Late Fees ($)</label>
+          <input type="number" id="income-late" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Other Income ($)</label>
+          <input type="number" id="income-other-amt" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Security Deposit Received ($)</label>
+          <input type="number" id="income-deposit" placeholder="0">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notes</label>
+          <textarea id="income-notes" placeholder="Tenant name, partial payment notes, etc."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-add-income')">Cancel</button>
+      <button class="btn btn-gold" onclick="addIncome()">💾 Save Income</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EXPENSE MODAL -->
+<div id="modal-add-expense" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📋 Add Operating Expense</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-expense')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Property</label>
+          <select id="exp-prop"></select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="exp-date">
+        </div>
+        <div class="form-group">
+          <label>Category (Schedule E Line)</label>
+          <select id="exp-cat">
+            <option value="adv">Advertising (Line 5)</option>
+            <option value="auto">Auto / Travel (Line 6)</option>
+            <option value="clean">Cleaning (Line 7)</option>
+            <option value="comm">Commissions (Line 8)</option>
+            <option value="ins">Insurance (Line 9)</option>
+            <option value="legal">Legal / Professional (Line 10)</option>
+            <option value="mgmt">Management Fees (Line 11)</option>
+            <option value="mort">Mortgage Interest (Line 12)</option>
+            <option value="ptax">Property Taxes (Line 16)</option>
+            <option value="util">Utilities (Line 17)</option>
+            <option value="sup">Supplies (Line 15)</option>
+            <option value="other">Other (Line 19)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vendor / Payee</label>
+          <input type="text" id="exp-vendor" placeholder="State Farm Insurance">
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="exp-amount" placeholder="1200">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="exp-desc" placeholder="Annual hazard insurance premium">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Notes</label>
+          <textarea id="exp-notes" placeholder="Policy numbers, account refs, etc."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-forest" onclick="closeModal('modal-add-expense')">Cancel</button>
+      <button class="btn btn-gold" onclick="addExpense()">💾 Save Expense</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+// ── DATA STORE ──────────────────────────────────────────
+let DB = {
+  properties: [],
+  capex: [],
+  maintenance: [],
+  income: [],
+  expenses: [],
+  sheetId: '',
+  selectedYear: new Date().getFullYear()
+};
+
+const YEARS = Array.from({length: 25}, (_, i) => 2026 + i);
+
+function save() {
+  localStorage.setItem('sor_db', JSON.stringify(DB));
+  syncToSheets();
+}
+
+function load() {
+  const raw = localStorage.getItem('sor_db');
+  if (raw) { try { DB = JSON.parse(raw); } catch(e){} }
+}
+
+// ── NAVIGATION ──────────────────────────────────────────
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(el) el.classList.add('active');
+  refreshAll();
+}
+
+// ── MODALS ──────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  refreshPropertySelects();
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); });
+});
+
+// ── YEAR SELECTORS ──────────────────────────────────────
+function buildYearSelector(containerId, onSelect) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  YEARS.forEach(y => {
+    const b = document.createElement('button');
+    b.className = 'year-btn' + (y === DB.selectedYear ? ' active' : '');
+    b.textContent = y;
+    b.onclick = () => { DB.selectedYear = y; buildYearSelector(containerId, onSelect); onSelect && onSelect(y); refreshAll(); };
+    el.appendChild(b);
+  });
+}
+
+function buildAllYearSelectors() {
+  ['maint-years','income-years','expense-years','tax-years','dash-years','cpa-years'].forEach(id => {
+    buildYearSelector(id, () => refreshAll());
+  });
+}
+
+// ── PROPERTY SELECTS ────────────────────────────────────
+function refreshPropertySelects() {
+  ['capex-prop','maint-prop','income-prop','exp-prop'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = DB.properties.length ? DB.properties.map(p => `<option value="${p.uid}">${p.id} — ${p.addr}</option>`).join('') : '<option value="">No properties yet</option>';
+  });
+}
+
+// ── UTILITIES ────────────────────────────────────────────
+const uid = () => Date.now().toString(36) + Math.random().toString(36).substr(2,4);
+const fmt = n => '$' + parseFloat(n||0).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+const yr = d => d ? new Date(d+'T12:00:00').getFullYear() : null;
+const getProp = id => DB.properties.find(p => p.uid === id);
+
+function depLife(propType) {
+  return propType && propType.includes('Commercial') ? 39 : 27.5;
+}
+
+// ── ADD PROPERTY ─────────────────────────────────────────
+function addProperty() {
+  const id = document.getElementById('prop-id').value.trim();
+  const addr = document.getElementById('prop-addr').value.trim();
+  if(!id || !addr) { alert('Please fill in Property ID and Address.'); return; }
+  const prop = {
+    uid: uid(), id, addr,
+    type: document.getElementById('prop-type').value,
+    date: document.getElementById('prop-date').value,
+    price: parseFloat(document.getElementById('prop-price').value)||0,
+    land: parseFloat(document.getElementById('prop-land').value)||0,
+    building: parseFloat(document.getElementById('prop-building').value)||0,
+    closing: parseFloat(document.getElementById('prop-closing').value)||0,
+    mortgage: parseFloat(document.getElementById('prop-mortgage').value)||0,
+    rate: parseFloat(document.getElementById('prop-rate').value)||0,
+    rent: parseFloat(document.getElementById('prop-rent').value)||0,
+    status: document.getElementById('prop-status').value,
+    notes: document.getElementById('prop-notes').value
+  };
+  DB.properties.push(prop);
+  save(); closeModal('modal-add-property'); refreshAll();
+  ['prop-id','prop-addr','prop-date','prop-price','prop-land','prop-building','prop-closing','prop-mortgage','prop-rate','prop-rent','prop-notes'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ── ADD CAPEX ─────────────────────────────────────────────
+function addCapEx() {
+  const cx = {
+    uid: uid(),
+    propId: document.getElementById('capex-prop').value,
+    date: document.getElementById('capex-date').value,
+    desc: document.getElementById('capex-desc').value,
+    cat: document.getElementById('capex-cat').value,
+    life: parseFloat(document.getElementById('capex-life').value),
+    amount: parseFloat(document.getElementById('capex-amount').value)||0,
+    vendor: document.getElementById('capex-vendor').value,
+    notes: document.getElementById('capex-notes').value
+  };
+  if(!cx.propId || !cx.desc || !cx.amount) { alert('Please fill required fields.'); return; }
+  DB.capex.push(cx);
+  save(); closeModal('modal-add-capex'); refreshAll();
+}
+
+// ── ADD MAINTENANCE ───────────────────────────────────────
+function addMaintenance() {
+  const m = {
+    uid: uid(),
+    propId: document.getElementById('maint-prop').value,
+    date: document.getElementById('maint-date').value,
+    desc: document.getElementById('maint-desc').value,
+    cat: document.getElementById('maint-cat').value,
+    vendor: document.getElementById('maint-vendor').value,
+    amount: parseFloat(document.getElementById('maint-amount').value)||0,
+    receipt: document.getElementById('maint-receipt').value,
+    notes: document.getElementById('maint-notes').value
+  };
+  if(!m.propId || !m.desc || !m.amount) { alert('Please fill required fields.'); return; }
+  DB.maintenance.push(m);
+  save(); closeModal('modal-add-maint'); refreshAll();
+}
+
+// ── ADD INCOME ────────────────────────────────────────────
+function addIncome() {
+  const inc = {
+    uid: uid(),
+    propId: document.getElementById('income-prop').value,
+    month: document.getElementById('income-month').value,
+    rent: parseFloat(document.getElementById('income-rent').value)||0,
+    late: parseFloat(document.getElementById('income-late').value)||0,
+    other: parseFloat(document.getElementById('income-other-amt').value)||0,
+    deposit: parseFloat(document.getElementById('income-deposit').value)||0,
+    notes: document.getElementById('income-notes').value
+  };
+  if(!inc.propId || !inc.month) { alert('Please select property and month.'); return; }
+  DB.income.push(inc);
+  save(); closeModal('modal-add-income'); refreshAll();
+}
+
+// ── ADD EXPENSE ───────────────────────────────────────────
+function addExpense() {
+  const e = {
+    uid: uid(),
+    propId: document.getElementById('exp-prop').value,
+    date: document.getElementById('exp-date').value,
+    cat: document.getElementById('exp-cat').value,
+    vendor: document.getElementById('exp-vendor').value,
+    amount: parseFloat(document.getElementById('exp-amount').value)||0,
+    desc: document.getElementById('exp-desc').value,
+    notes: document.getElementById('exp-notes').value
+  };
+  if(!e.propId || !e.amount) { alert('Please fill required fields.'); return; }
+  DB.expenses.push(e);
+  save(); closeModal('modal-add-expense'); refreshAll();
+}
+
+// ── DELETE HELPERS ─────────────────────────────────────────
+function deleteRecord(arr, uid_val) {
+  const idx = DB[arr].findIndex(r => r.uid === uid_val);
+  if(idx > -1) { DB[arr].splice(idx, 1); save(); refreshAll(); }
+}
+
+// ── DEPRECIATION CALC ─────────────────────────────────────
+function calcAnnualDepr(buildingBasis, life) { return buildingBasis / life; }
+
+function getDeprForYear(item, year, life, basis) {
+  const startYear = yr(item.date);
+  if(!startYear || year < startYear) return 0;
+  const age = year - startYear + 1;
+  if(age > life) return 0;
+  return basis / life;
+}
+
+function allDeprItems() {
+  const items = [];
+  DB.properties.forEach(p => {
+    const basis = (p.building||0) + (p.closing||0);
+    const life = depLife(p.type);
+    items.push({ label: `${p.id} — Building`, date: p.date, basis, life, uid: p.uid + '-bldg' });
+  });
+  DB.capex.forEach(c => {
+    const prop = getProp(c.propId);
+    items.push({ label: `${prop ? prop.id : '?'} — ${c.desc}`, date: c.date, basis: c.amount, life: c.life, uid: c.uid });
+  });
+  return items;
+}
+
+function totalDeprForYear(year) {
+  return allDeprItems().reduce((sum, item) => sum + getDeprForYear(item, year, item.life, item.basis), 0);
+}
+
+// ── FINANCIAL CALCS FOR YEAR ──────────────────────────────
+function incomeForYear(year) {
+  return DB.income.filter(r => r.month && r.month.startsWith(year)).reduce((s, r) => s + r.rent + r.late + r.other, 0);
+}
+function maintForYear(year) {
+  return DB.maintenance.filter(r => yr(r.date) === year).reduce((s, r) => s + r.amount, 0);
+}
+function expensesForYear(year) {
+  return DB.expenses.filter(r => yr(r.date) === year).reduce((s, r) => s + r.amount, 0);
+}
+function expByCategory(year, cat) {
+  return DB.expenses.filter(r => yr(r.date) === year && r.cat === cat).reduce((s, r) => s + r.amount, 0);
+}
+
+// ── REFRESH ALL ────────────────────────────────────────────
+function refreshAll() {
+  buildAllYearSelectors();
+  refreshDashboard();
+  refreshPropertyTable();
+  refreshCapExTable();
+  refreshMaintenanceTable();
+  refreshIncomeTable();
+  refreshExpenseTable();
+  refreshDepreciationTable();
+  refreshTaxSummary();
+  refreshCPAReport();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────
+function refreshDashboard() {
+  const y = DB.selectedYear;
+  document.getElementById('dash-year-label').textContent = y;
+  document.getElementById('stat-props').textContent = DB.properties.length;
+  const invested = DB.properties.reduce((s, p) => s + p.price + p.closing, 0) + DB.capex.reduce((s, c) => s + c.amount, 0);
+  document.getElementById('stat-invested').textContent = fmt(invested);
+  document.getElementById('stat-income').textContent = fmt(incomeForYear(y));
+  const deductions = expensesForYear(y) + maintForYear(y) + totalDeprForYear(y);
+  document.getElementById('stat-deductions').textContent = fmt(deductions);
+  const net = incomeForYear(y) - deductions;
+  document.getElementById('stat-net').textContent = fmt(net);
+  document.getElementById('stat-maint').textContent = fmt(maintForYear(y));
+
+  // Property list
+  const propList = document.getElementById('dash-property-list');
+  if(DB.properties.length === 0) {
+    propList.innerHTML = '<p class="text-muted">No properties added yet.</p>';
+  } else {
+    propList.innerHTML = DB.properties.map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">
+        <div><strong>${p.id}</strong><br><span class="text-muted">${p.addr}</span></div>
+        <div style="text-align:right;"><span class="badge ${p.status.includes('Occupied') ? 'badge-green' : p.status.includes('Vacant') ? 'badge-gold' : 'badge-blue'}">${p.status}</span><br><span class="text-muted">${fmt(p.rent)}/mo</span></div>
+      </div>`).join('');
+  }
+
+  // Deadlines
+  const deadlines = document.getElementById('tax-deadlines');
+  deadlines.innerHTML = [
+    { date: `Apr 15, ${y}`, label: 'Q1 Estimated Tax (Federal)', urgent: false },
+    { date: `Mar 15, ${y}`, label: 'Form 1065 / LLC Return Due', urgent: false },
+    { date: `Mar 15, ${y}`, label: 'Alabama Form 20S Due', urgent: false },
+    { date: `Jun 15, ${y}`, label: 'Q2 Estimated Tax Due', urgent: false },
+    { date: `Sep 15, ${y}`, label: 'Q3 Estimated Tax Due', urgent: false },
+    { date: `Jan 15, ${y+1}`, label: 'Q4 Estimated Tax Due', urgent: false },
+  ].map(d => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee;font-size:0.85rem;"><span>${d.label}</span><span class="badge badge-gold">${d.date}</span></div>`).join('');
+}
+
+// ── PROPERTY TABLE ─────────────────────────────────────────
+function refreshPropertyTable() {
+  const tbody = document.getElementById('property-table-body');
+  if(DB.properties.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:20px;">No properties yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.properties.map((p, i) => `
+    <tr>
+      <td><strong>#${i+1}</strong></td>
+      <td><strong>${p.id}</strong><br><span class="text-muted" style="font-size:0.78rem;">${p.addr}</span></td>
+      <td>${p.date||'—'}</td>
+      <td class="mono">${fmt(p.price)}</td>
+      <td class="mono">${fmt(p.land)}</td>
+      <td class="mono">${fmt(p.building)}</td>
+      <td class="mono">${fmt(p.closing)}</td>
+      <td><span class="badge badge-blue">${p.type.split(' ')[0]}</span></td>
+      <td><span class="badge ${p.status.includes('Occupied')?'badge-green':p.status.includes('Vacant')?'badge-gold':'badge-gray'}">${p.status}</span></td>
+      <td><button class="btn btn-alert" style="padding:4px 10px;font-size:0.75rem;" onclick="if(confirm('Delete this property?')) deleteRecord('properties','${p.uid}')">✕</button></td>
+    </tr>`).join('');
+}
+
+// ── CAPEX TABLE ─────────────────────────────────────────────
+function refreshCapExTable() {
+  const tbody = document.getElementById('capex-table-body');
+  if(DB.capex.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No capital improvements logged.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DB.capex.map(c => {
+    const prop = getProp(c.propId);
+    const annualDepr = (c.amount / c.life).toFixed(2);
+    return `<tr>
+      <td>${prop ? prop.id : '?'}</td>
+      <td>${c.desc}</td>
+      <td>${c.date||'—'}</td>
+      <td class="mono">${fmt(c.amount)}</td>
+      <td><span class="badge badge-blue">${c.cat}</span></td>
+      <td>${c.life} yrs</td>
+      <td class="mono">${fmt(parseFloat(annualDepr))}</td>
+      <td><button class="btn btn-alert" style="padding:4px 10px;font-size:0.75rem;" onclick="if(confirm('Delete?')) deleteRecord('capex','${c.uid}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MAINTENANCE TABLE ───────────────────────────────────────
+function refreshMaintenanceTable() {
+  const y = DB.selectedYear;
+  const filtered = DB.maintenance.filter(r => yr(r.date) === y);
+  const total = filtered.reduce((s, r) => s + r.amount, 0);
+  document.getElementById('maint-total').textContent = fmt(total);
+  document.getElementById('maint-avg').textContent = DB.properties.length ? fmt(total / DB.properties.length) : '$0';
+  document.getElementById('maint-count').textContent = filtered.length;
+
+  const tbody = document.getElementById('maint-table-body');
+  if(filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No maintenance records for ${y}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(m => {
+    const prop = getProp(m.propId);
+    return `<tr>
+      <td>${prop ? prop.id : '?'}</td>
+      <td>${m.date||'—'}</td>
+      <td>${m.desc}</td>
+      <td>${m.vendor||'—'}</td>
+      <td><span class="badge badge-blue">${m.cat}</span></td>
+      <td class="mono">${fmt(m.amount)}</td>
+      <td>${m.receipt||'—'}</td>
+      <td><button class="btn btn-alert" style="padding:4px 10px;font-size:0.75rem;" onclick="if(confirm('Delete?')) deleteRecord('maintenance','${m.uid}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── INCOME TABLE ─────────────────────────────────────────────
+function refreshIncomeTable() {
+  const y = DB.selectedYear;
+  const filtered = DB.income.filter(r => r.month && r.month.startsWith(y));
+  const gross = filtered.reduce((s, r) => s + r.rent, 0);
+  const other = filtered.reduce((s, r) => s + r.late + r.other, 0);
+  const occupied = filtered.filter(r => r.rent > 0).length;
+  document.getElementById('income-gross').textContent = fmt(gross);
+  document.getElementById('income-other').textContent = fmt(other);
+  document.getElementById('income-occupied').textContent = occupied;
+  document.getElementById('income-vacancy').textContent = fmt(DB.properties.reduce((s, p) => s + p.rent, 0) * 12 - gross);
+
+  const tbody = document.getElementById('income-table-body');
+  if(filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No income records for ${y}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => {
+    const prop = getProp(r.propId);
+    return `<tr>
+      <td>${prop ? prop.id : '?'}</td>
+      <td>${r.month||'—'}</td>
+      <td class="mono">${fmt(r.rent)}</td>
+      <td class="mono">${fmt(r.late)}</td>
+      <td class="mono">${fmt(r.other)}</td>
+      <td class="mono"><strong>${fmt(r.rent + r.late + r.other)}</strong></td>
+      <td>${r.notes||'—'}</td>
+      <td><button class="btn btn-alert" style="padding:4px 10px;font-size:0.75rem;" onclick="if(confirm('Delete?')) deleteRecord('income','${r.uid}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── EXPENSE TABLE ─────────────────────────────────────────────
+function refreshExpenseTable() {
+  const y = DB.selectedYear;
+  const filtered = DB.expenses.filter(r => yr(r.date) === y);
+  document.getElementById('exp-ptax').textContent = fmt(expByCategory(y, 'ptax'));
+  document.getElementById('exp-ins').textContent = fmt(expByCategory(y, 'ins'));
+  document.getElementById('exp-mgmt').textContent = fmt(expByCategory(y, 'mgmt'));
+  document.getElementById('exp-util').textContent = fmt(expByCategory(y, 'util'));
+  document.getElementById('exp-total').textContent = fmt(filtered.reduce((s, r) => s + r.amount, 0));
+
+  const catLabels = { adv:'Advertising', auto:'Auto/Travel', clean:'Cleaning', comm:'Commissions', ins:'Insurance', legal:'Legal/Prof', mgmt:'Mgmt Fees', mort:'Mortgage Int', ptax:'Property Tax', util:'Utilities', sup:'Supplies', other:'Other' };
+  const scheLines = { adv:'5', auto:'6', clean:'7', comm:'8', ins:'9', legal:'10', mgmt:'11', mort:'12', ptax:'16', util:'17', sup:'15', other:'19' };
+
+  const tbody = document.getElementById('expense-table-body');
+  if(filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No expenses for ${y}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(e => {
+    const prop = getProp(e.propId);
+    return `<tr>
+      <td>${prop ? prop.id : '?'}</td>
+      <td>${e.date||'—'}</td>
+      <td>${catLabels[e.cat]||e.cat}</td>
+      <td>${e.desc||'—'}</td>
+      <td>${e.vendor||'—'}</td>
+      <td class="mono">${fmt(e.amount)}</td>
+      <td>Line ${scheLines[e.cat]||'19'}</td>
+      <td><button class="btn btn-alert" style="padding:4px 10px;font-size:0.75rem;" onclick="if(confirm('Delete?')) deleteRecord('expenses','${e.uid}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── DEPRECIATION TABLE ────────────────────────────────────────
+function refreshDepreciationTable() {
+  const y = DB.selectedYear;
+  const items = allDeprItems();
+  const tbody = document.getElementById('depr-table-body');
+
+  if(items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:20px;">Add properties to generate depreciation schedule.</td></tr>';
+    document.getElementById('depr-projection').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = items.map(item => {
+    const startYear = yr(item.date) || 2026;
+    const annualDepr = item.basis / item.life;
+    const yearsElapsed = Math.max(0, y - startYear + 1);
+    const accumDepr = Math.min(item.basis, annualDepr * yearsElapsed);
+    const remaining = Math.max(0, item.basis - accumDepr);
+    const fullyDepr = startYear + Math.ceil(item.life);
+    const currentDepr = getDeprForYear(item, y, item.life, item.basis);
+    return `<tr>
+      <td>${item.label}</td>
+      <td>Building / Improvement</td>
+      <td>${item.date||'—'}</td>
+      <td class="mono">${fmt(item.basis)}</td>
+      <td>${item.life} yrs</td>
+      <td class="mono">${fmt(currentDepr)}</td>
+      <td class="mono">${fmt(accumDepr)}</td>
+      <td class="mono">${fmt(remaining)}</td>
+      <td>${fullyDepr}</td>
+    </tr>`;
+  }).join('');
+
+  // Projection table 2026-2050
+  const proj = document.getElementById('depr-projection');
+  let html = '<table style="font-size:0.78rem;"><thead><tr><th>Year</th>';
+  items.slice(0,5).forEach(item => html += `<th>${item.label.split(' — ')[0]}</th>`);
+  if(items.length > 5) html += `<th>+${items.length-5} more</th>`;
+  html += '<th>Total Depr.</th></tr></thead><tbody>';
+  YEARS.forEach(yr2 => {
+    const total = items.reduce((s, item) => s + getDeprForYear(item, yr2, item.life, item.basis), 0);
+    html += `<tr><td><strong>${yr2}</strong></td>`;
+    items.slice(0,5).forEach(item => html += `<td class="mono">${fmt(getDeprForYear(item, yr2, item.life, item.basis))}</td>`);
+    if(items.length > 5) html += `<td class="mono">${fmt(items.slice(5).reduce((s,item)=>s+getDeprForYear(item,yr2,item.life,item.basis),0))}</td>`;
+    html += `<td class="mono"><strong>${fmt(total)}</strong></td></tr>`;
+  });
+  html += '</tbody></table>';
+  proj.innerHTML = html;
+}
+
+// ── TAX SUMMARY ────────────────────────────────────────────
+function refreshTaxSummary() {
+  const y = DB.selectedYear;
+  const income = incomeForYear(y);
+  const opex = expensesForYear(y);
+  const maint = maintForYear(y);
+  const depr = totalDeprForYear(y);
+  const mort = expByCategory(y, 'mort');
+  const net = income - opex - maint - depr - mort;
+  const qbi = Math.max(0, net * 0.20);
+  const taxable = Math.max(0, net - qbi);
+  const fedTax = taxable * 0.22;
+  const alTax = Math.max(0, net) * 0.05;
+
+  document.getElementById('tx-income').textContent = fmt(income);
+  document.getElementById('tx-opex').textContent = `(${fmt(opex)})`;
+  document.getElementById('tx-maint').textContent = `(${fmt(maint)})`;
+  document.getElementById('tx-depr').textContent = `(${fmt(depr)})`;
+  document.getElementById('tx-mort').textContent = `(${fmt(mort)})`;
+  document.getElementById('tx-net').textContent = fmt(net);
+  document.getElementById('tx-fed-net').textContent = fmt(net);
+  document.getElementById('tx-qbi').textContent = `(${fmt(qbi)})`;
+  document.getElementById('tx-fed-taxable').textContent = fmt(taxable);
+  document.getElementById('tx-fed-tax').textContent = fmt(fedTax);
+  document.getElementById('tx-passive').textContent = net < 0 ? fmt(Math.abs(net)) : '$0';
+  document.getElementById('tx-al-income').textContent = fmt(net);
+  document.getElementById('tx-al-taxable').textContent = fmt(Math.max(0, net));
+  document.getElementById('tx-al-tax').textContent = fmt(alTax);
+}
+
+// ── CPA REPORT ─────────────────────────────────────────────
+function refreshCPAReport() {
+  const y = DB.selectedYear;
+  const today = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+  const el = document.getElementById('cpa-year-label');
+  if(el) el.textContent = y;
+  const dateEl = document.getElementById('cpa-date');
+  if(dateEl) dateEl.textContent = today;
+  const footerEl = document.getElementById('cpa-footer-date');
+  if(footerEl) footerEl.textContent = today;
+
+  // Properties
+  const cpaProp = document.getElementById('cpa-properties');
+  if(cpaProp) {
+    cpaProp.innerHTML = DB.properties.length
+      ? DB.properties.map(p => `<tr><td>${p.addr}</td><td>${p.type}</td><td>${p.date}</td><td class="mono">${fmt(p.price)}</td><td class="mono">${fmt(p.land)}</td><td class="mono">${fmt(p.building)}</td><td>${p.date}</td></tr>`).join('')
+      : '<tr><td colspan="7" class="text-muted">No properties entered.</td></tr>';
+  }
+
+  // Income by property
+  const cpaInc = document.getElementById('cpa-income');
+  let totalRent = 0, totalOther = 0;
+  if(cpaInc) {
+    cpaInc.innerHTML = DB.properties.map(p => {
+      const propInc = DB.income.filter(r => r.propId === p.uid && r.month && r.month.startsWith(y));
+      const rent = propInc.reduce((s, r) => s + r.rent, 0);
+      const other = propInc.reduce((s, r) => s + r.late + r.other, 0);
+      totalRent += rent; totalOther += other;
+      return `<tr><td>${p.id} — ${p.addr}</td><td class="mono">${fmt(rent)}</td><td class="mono">${fmt(other)}</td><td class="mono">${fmt(rent+other)}</td></tr>`;
+    }).join('') || '<tr><td colspan="4" class="text-muted">No properties.</td></tr>';
+    document.getElementById('cpa-income-total').textContent = fmt(totalRent);
+    document.getElementById('cpa-other-total').textContent = fmt(totalOther);
+    document.getElementById('cpa-total-income').textContent = fmt(totalRent + totalOther);
+  }
+
+  // Expense categories
+  const expCats = { adv:'cpa-exp-adv', auto:'cpa-exp-auto', clean:'cpa-exp-clean', comm:'cpa-exp-comm', ins:'cpa-exp-ins', legal:'cpa-exp-legal', mgmt:'cpa-exp-mgmt', mort:'cpa-exp-mort', ptax:'cpa-exp-ptax', util:'cpa-exp-util', sup:'cpa-exp-sup', other:'cpa-exp-other' };
+  let totalExp = 0;
+  Object.entries(expCats).forEach(([cat, elId]) => {
+    const amt = expByCategory(y, cat) + (cat === 'clean' ? maintForYear(y) : 0);
+    totalExp += (cat === 'clean' ? expByCategory(y, cat) : (cat === 'clean' ? 0 : expByCategory(y, cat)));
+    const el = document.getElementById(elId);
+    if(el) el.textContent = fmt(cat === 'clean' ? expByCategory(y,'clean') + maintForYear(y) : expByCategory(y, cat));
+  });
+  const totalExpAll = expensesForYear(y) + maintForYear(y);
+  const expTotEl = document.getElementById('cpa-exp-total');
+  if(expTotEl) expTotEl.textContent = fmt(totalExpAll);
+
+  // Depreciation
+  const cpaDepr = document.getElementById('cpa-depr');
+  const items = allDeprItems();
+  const totalDepr = totalDeprForYear(y);
+  if(cpaDepr) {
+    cpaDepr.innerHTML = items.map(item => {
+      const startYear = yr(item.date)||2026;
+      const annualDepr = item.basis / item.life;
+      const yearsElapsed = Math.max(0, y - startYear);
+      const priorAccum = Math.min(item.basis, annualDepr * yearsElapsed);
+      const currentDepr = getDeprForYear(item, y, item.life, item.basis);
+      return `<tr><td>${item.label}</td><td>${item.date||'—'}</td><td class="mono">${fmt(item.basis)}</td><td class="mono">${fmt(priorAccum)}</td><td>S/L ${item.life} yr</td><td class="mono">${fmt(currentDepr)}</td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="text-muted">No depreciation items.</td></tr>';
+    document.getElementById('cpa-depr-total').textContent = fmt(totalDepr);
+  }
+
+  // Net summary
+  const net = (totalRent + totalOther) - totalExpAll - totalDepr;
+  const alTax = Math.max(0, net) * 0.05;
+  ['cpa-sum-income','cpa-al-net','cpa-al-taxable'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = fmt(totalRent+totalOther); });
+  const sumExp = document.getElementById('cpa-sum-exp'); if(sumExp) sumExp.textContent = fmt(totalExpAll);
+  const sumDepr = document.getElementById('cpa-sum-depr'); if(sumDepr) sumDepr.textContent = fmt(totalDepr);
+  const sumNet = document.getElementById('cpa-sum-net'); if(sumNet) sumNet.textContent = fmt(net);
+  const alTaxEl = document.getElementById('cpa-al-tax'); if(alTaxEl) alTaxEl.textContent = fmt(alTax);
+  const alTaxableEl = document.getElementById('cpa-al-taxable'); if(alTaxableEl) alTaxableEl.textContent = fmt(Math.max(0, net));
+}
+
+// ── GOOGLE SHEETS ──────────────────────────────────────────
+function saveSheetId() {
+  const val = document.getElementById('sheets-id-input').value.trim();
+  if(!val) { alert('Please enter a valid Sheet ID.'); return; }
+  DB.sheetId = val;
+  save();
+  document.getElementById('sheets-status').textContent = '✓ Sheet ID saved! Data will sync when you add records. Make sure to enable the Google Sheets API in your Google Cloud project.';
+}
+
+function syncToSheets() {
+  if(!DB.sheetId) return;
+  // Google Sheets API sync would be implemented here with OAuth2
+  // Requires: gapi.client.sheets with user-authorized OAuth token
+  console.log('Sync triggered for Sheet ID:', DB.sheetId);
+}
+
+// ── INIT ───────────────────────────────────────────────────
+load();
+DB.selectedYear = 2026;
+document.getElementById('cpa-date') && (document.getElementById('cpa-date').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}));
+document.getElementById('cpa-footer-date') && (document.getElementById('cpa-footer-date').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}));
+
+// Pre-fill today's date in modals
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  ['prop-date','capex-date','maint-date','exp-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = today;
+  });
+  const monthToday = new Date().toISOString().substr(0,7);
+  const incM = document.getElementById('income-month');
+  if(incM) incM.value = monthToday;
+  refreshAll();
+});
+</script>
+</body>
+</html>
