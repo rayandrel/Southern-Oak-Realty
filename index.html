@@ -246,6 +246,21 @@
 </head>
 <body>
 
+<div id="login-screen" style="display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#1a2e1a,#2d4a2d);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:28px;font-family:DM Sans,sans-serif;">
+  <div style="text-align:center;"><div style="font-size:4rem;">🌳</div>
+    <div style="font-family:Playfair Display,serif;font-size:2rem;color:#F5F0E8;font-weight:700;">Southern Oak Realty LLC</div>
+    <div style="color:#C9A227;font-size:0.82rem;letter-spacing:0.1em;text-transform:uppercase;margin-top:6px;">Property Management &amp; Tax System</div>
+  </div>
+  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:32px 40px;text-align:center;max-width:400px;width:90%;">
+    <div style="color:#F5F0E8;font-size:1rem;margin-bottom:8px;font-weight:600;">Secure Multi-User Access</div>
+    <div style="color:rgba(245,240,232,0.65);font-size:0.83rem;margin-bottom:22px;line-height:1.6;">Sign in with Google to sync data live across all 5 authorized users on any device.</div>
+    <button onclick="signIn()" style="background:#C9A227;color:#1a2e1a;border:none;padding:13px 0;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;width:100%;font-family:DM Sans,sans-serif;">🔐 Sign in with Google</button>
+    <div style="margin-top:16px;padding:10px;background:rgba(201,162,39,0.1);border-radius:8px;font-size:0.76rem;color:#C9A227;line-height:1.6;"><strong>First-time setup:</strong> Paste your OAuth Client ID into the file first. Instructions are inside the app under the Instructions tab.</div>
+    <button onclick="document.getElementById('login-screen').style.display='none';document.getElementById('app-root').style.display='flex';currentUser='local';setSyncStatus('error','Local only');" style="margin-top:12px;background:transparent;color:rgba(245,240,232,0.45);border:1px solid rgba(255,255,255,0.12);padding:9px 0;border-radius:6px;font-size:0.8rem;cursor:pointer;font-family:DM Sans,sans-serif;width:100%;">Continue without sync (local only)</button>
+  </div>
+</div>
+<div id="app-root" style="display:none;flex-direction:column;min-height:100vh;">
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-brand">
@@ -256,7 +271,9 @@
     </div>
   </div>
   <div class="topbar-actions">
-    <button class="btn btn-outline" onclick="openModal('modal-sheets')">⚙ Google Sheets Setup</button>
+    <span id="sync-status" style="font-size:0.78rem;color:rgba(245,240,232,0.6);margin-right:6px;">○ Not signed in</span>
+    <button class="btn btn-outline" onclick="if(typeof pullFromSheets!=='undefined')pullFromSheets()" title="Refresh">⟳ Sync</button>
+    <button class="btn btn-outline" onclick="signOut()">Sign Out</button>
     <button class="btn btn-gold" onclick="showPage('page-cpa'); window.print()">🖨 Print CPA Report</button>
   </div>
 </div>
@@ -1794,29 +1811,347 @@ function refreshCPAReport() {
   const alTaxableEl = document.getElementById('cpa-al-taxable'); if(alTaxableEl) alTaxableEl.textContent = fmt(Math.max(0, net));
 }
 
-// ── GOOGLE SHEETS ──────────────────────────────────────────
-function saveSheetId() {
-  const val = document.getElementById('sheets-id-input').value.trim();
-  if(!val) { alert('Please enter a valid Sheet ID.'); return; }
-  DB.sheetId = val;
-  save();
-  document.getElementById('sheets-status').textContent = '✓ Sheet ID saved! Data will sync when you add records. Make sure to enable the Google Sheets API in your Google Cloud project.';
+// ══════════════════════════════════════════════════════════
+// GOOGLE OAUTH2 + SHEETS SYNC
+// ══════════════════════════════════════════════════════════
+
+const SHEET_ID   = '1Q_mhnGh-aeK1ANydMRhjk7nHQuFCB12_tc5f_HDcNnI';
+const CLIENT_ID  = ''; // ← You will paste your OAuth Client ID here (step 6 below)
+const SCOPES     = 'https://www.googleapis.com/auth/spreadsheets';
+const SHEET_NAME = 'SOR_Data';
+
+let gapiReady = false;
+let tokenClient = null;
+let currentUser = null;
+
+// Sheet column layout: [table, uid, json_blob]
+// Each record type stored as one row: table | uid | full JSON
+
+// ── GAPI INIT ──────────────────────────────────────────────
+function gapiLoaded() {
+  gapi.load('client', async () => {
+    await gapi.client.init({
+      discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+    });
+    gapiReady = true;
+    setSyncStatus('idle');
+  });
 }
 
-function syncToSheets() {
-  if(!DB.sheetId) return;
-  // Google Sheets API sync would be implemented here with OAuth2
-  // Requires: gapi.client.sheets with user-authorized OAuth token
-  console.log('Sync triggered for Sheet ID:', DB.sheetId);
+function gisLoaded() {
+  if(!CLIENT_ID) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if(resp.error) { setSyncStatus('error', resp.error); return; }
+      currentUser = 'authorized';
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-root').style.display = 'flex';
+      setSyncStatus('syncing');
+      await ensureSheetSetup();
+      await pullFromSheets();
+      setSyncStatus('ok');
+    }
+  });
 }
+
+// ── SIGN IN / OUT ──────────────────────────────────────────
+function signIn() {
+  if(!CLIENT_ID) {
+    alert('⚠️ No OAuth Client ID set yet.\n\nOpen this HTML file in a text editor, find the line:\n  const CLIENT_ID = \'\'\nand paste your Client ID between the quotes.\n\nSee the setup instructions panel for details.');
+    return;
+  }
+  if(!gapiReady) { alert('Google API still loading, please wait a moment and try again.'); return; }
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function signOut() {
+  google.accounts.oauth2.revoke(gapi.client.getToken().access_token, () => {
+    gapi.client.setToken('');
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-root').style.display = 'none';
+    setSyncStatus('idle');
+  });
+}
+
+// ── SYNC STATUS UI ─────────────────────────────────────────
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  const states = {
+    idle:    { icon:'○', text:'Not signed in',   color:'#aaa' },
+    syncing: { icon:'↻', text:'Syncing…',         color:'#C9A227' },
+    ok:      { icon:'●', text:'Synced to Sheets', color:'#4a7c59' },
+    error:   { icon:'✕', text: msg||'Sync error', color:'#C0392B' },
+  };
+  const s = states[state] || states.idle;
+  el.innerHTML = `<span style="color:${s.color};font-weight:700;">${s.icon}</span> ${s.text}`;
+}
+
+// ── ENSURE SHEET HAS HEADER ROW ────────────────────────────
+async function ensureSheetSetup() {
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A1:C1`,
+    });
+    if(!res.result.values) {
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A1`,
+        valueInputOption: 'RAW',
+        resource: { values: [['table','uid','json']] }
+      });
+    }
+  } catch(e) {
+    // Sheet tab might not exist — create it
+    try {
+      await gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        resource: { requests: [{ addSheet: { properties: { title: SHEET_NAME } } }] }
+      });
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A1`,
+        valueInputOption: 'RAW',
+        resource: { values: [['table','uid','json']] }
+      });
+    } catch(e2) { console.error('Sheet setup error:', e2); }
+  }
+}
+
+// ── PULL ALL DATA FROM SHEETS ──────────────────────────────
+async function pullFromSheets() {
+  setSyncStatus('syncing');
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A2:C`,
+    });
+    const rows = res.result.values || [];
+    // Reset arrays
+    DB.properties = []; DB.capex = []; DB.maintenance = []; DB.income = []; DB.expenses = [];
+    rows.forEach(row => {
+      if(row.length < 3) return;
+      const [table, , json] = row;
+      try {
+        const obj = JSON.parse(json);
+        if(DB[table]) DB[table].push(obj);
+      } catch(e) {}
+    });
+    // Save to localStorage as cache
+    localStorage.setItem('sor_db', JSON.stringify(DB));
+    refreshAll();
+    setSyncStatus('ok');
+  } catch(e) {
+    console.error('Pull error:', e);
+    setSyncStatus('error', 'Pull failed');
+  }
+}
+
+// ── PUSH ONE RECORD TO SHEETS ──────────────────────────────
+async function pushRecord(table, record) {
+  if(!currentUser || !gapiReady) return;
+  setSyncStatus('syncing');
+  try {
+    // Check if row exists (update) or is new (append)
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:B`,
+    });
+    const rows = res.result.values || [];
+    const rowIndex = rows.findIndex(r => r[0] === table && r[1] === record.uid);
+
+    if(rowIndex > 0) {
+      // Update existing row
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A${rowIndex+1}:C${rowIndex+1}`,
+        valueInputOption: 'RAW',
+        resource: { values: [[table, record.uid, JSON.stringify(record)]] }
+      });
+    } else {
+      // Append new row
+      await gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A:C`,
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        resource: { values: [[table, record.uid, JSON.stringify(record)]] }
+      });
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    console.error('Push error:', e);
+    setSyncStatus('error', 'Push failed');
+  }
+}
+
+// ── DELETE RECORD FROM SHEETS ──────────────────────────────
+async function deleteFromSheets(table, uid_val) {
+  if(!currentUser || !gapiReady) return;
+  setSyncStatus('syncing');
+  try {
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:B`,
+    });
+    const rows = res.result.values || [];
+    const rowIndex = rows.findIndex(r => r[0] === table && r[1] === uid_val);
+    if(rowIndex > 0) {
+      // Get sheet ID (tab ID) first
+      const meta = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+      const sheetTabId = meta.result.sheets.find(s => s.properties.title === SHEET_NAME)?.properties.sheetId ?? 0;
+      await gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SHEET_ID,
+        resource: {
+          requests: [{
+            deleteDimension: {
+              range: { sheetId: sheetTabId, dimension:'ROWS', startIndex: rowIndex, endIndex: rowIndex+1 }
+            }
+          }]
+        }
+      });
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    console.error('Delete error:', e);
+    setSyncStatus('error', 'Delete failed');
+  }
+}
+
+// ── OVERRIDE save() TO ALSO PUSH ──────────────────────────
+// (Called after every add — passes the last-added record)
+async function saveAndPush(table, record) {
+  localStorage.setItem('sor_db', JSON.stringify(DB));
+  await pushRecord(table, record);
+}
+
+// ── OVERRIDE deleteRecord TO ALSO DELETE FROM SHEETS ──────
+async function deleteRecord(arr, uid_val) {
+  const idx = DB[arr].findIndex(r => r.uid === uid_val);
+  if(idx > -1) {
+    DB[arr].splice(idx, 1);
+    localStorage.setItem('sor_db', JSON.stringify(DB));
+    refreshAll();
+    await deleteFromSheets(arr, uid_val);
+  }
+}
+
+// ── PATCH ADD FUNCTIONS TO USE saveAndPush ─────────────────
+const _origAddProperty   = addProperty;
+const _origAddCapEx      = addCapEx;
+const _origAddMaintenance= addMaintenance;
+const _origAddIncome     = addIncome;
+const _origAddExpense    = addExpense;
+
+// We re-define each to push after local add
+window.addProperty = async function() {
+  const id = document.getElementById('prop-id').value.trim();
+  const addr = document.getElementById('prop-addr').value.trim();
+  if(!id || !addr) { alert('Please fill in Property ID and Address.'); return; }
+  const prop = {
+    uid: uid(), id, addr,
+    type: document.getElementById('prop-type').value,
+    date: document.getElementById('prop-date').value,
+    price: parseFloat(document.getElementById('prop-price').value)||0,
+    land: parseFloat(document.getElementById('prop-land').value)||0,
+    building: parseFloat(document.getElementById('prop-building').value)||0,
+    closing: parseFloat(document.getElementById('prop-closing').value)||0,
+    mortgage: parseFloat(document.getElementById('prop-mortgage').value)||0,
+    rate: parseFloat(document.getElementById('prop-rate').value)||0,
+    rent: parseFloat(document.getElementById('prop-rent').value)||0,
+    status: document.getElementById('prop-status').value,
+    notes: document.getElementById('prop-notes').value
+  };
+  DB.properties.push(prop);
+  closeModal('modal-add-property'); refreshAll();
+  ['prop-id','prop-addr','prop-date','prop-price','prop-land','prop-building','prop-closing','prop-mortgage','prop-rate','prop-rent','prop-notes'].forEach(id2 => { const e=document.getElementById(id2); if(e) e.value=''; });
+  await saveAndPush('properties', prop);
+};
+
+window.addCapEx = async function() {
+  const cx = {
+    uid: uid(),
+    propId: document.getElementById('capex-prop').value,
+    date: document.getElementById('capex-date').value,
+    desc: document.getElementById('capex-desc').value,
+    cat: document.getElementById('capex-cat').value,
+    life: parseFloat(document.getElementById('capex-life').value),
+    amount: parseFloat(document.getElementById('capex-amount').value)||0,
+    vendor: document.getElementById('capex-vendor').value,
+    notes: document.getElementById('capex-notes').value
+  };
+  if(!cx.propId || !cx.desc || !cx.amount) { alert('Please fill required fields.'); return; }
+  DB.capex.push(cx);
+  closeModal('modal-add-capex'); refreshAll();
+  await saveAndPush('capex', cx);
+};
+
+window.addMaintenance = async function() {
+  const m = {
+    uid: uid(),
+    propId: document.getElementById('maint-prop').value,
+    date: document.getElementById('maint-date').value,
+    desc: document.getElementById('maint-desc').value,
+    cat: document.getElementById('maint-cat').value,
+    vendor: document.getElementById('maint-vendor').value,
+    amount: parseFloat(document.getElementById('maint-amount').value)||0,
+    receipt: document.getElementById('maint-receipt').value,
+    notes: document.getElementById('maint-notes').value
+  };
+  if(!m.propId || !m.desc || !m.amount) { alert('Please fill required fields.'); return; }
+  DB.maintenance.push(m);
+  closeModal('modal-add-maint'); refreshAll();
+  await saveAndPush('maintenance', m);
+};
+
+window.addIncome = async function() {
+  const inc = {
+    uid: uid(),
+    propId: document.getElementById('income-prop').value,
+    month: document.getElementById('income-month').value,
+    rent: parseFloat(document.getElementById('income-rent').value)||0,
+    late: parseFloat(document.getElementById('income-late').value)||0,
+    other: parseFloat(document.getElementById('income-other-amt').value)||0,
+    deposit: parseFloat(document.getElementById('income-deposit').value)||0,
+    notes: document.getElementById('income-notes').value
+  };
+  if(!inc.propId || !inc.month) { alert('Please select property and month.'); return; }
+  DB.income.push(inc);
+  closeModal('modal-add-income'); refreshAll();
+  await saveAndPush('income', inc);
+};
+
+window.addExpense = async function() {
+  const e = {
+    uid: uid(),
+    propId: document.getElementById('exp-prop').value,
+    date: document.getElementById('exp-date').value,
+    cat: document.getElementById('exp-cat').value,
+    vendor: document.getElementById('exp-vendor').value,
+    amount: parseFloat(document.getElementById('exp-amount').value)||0,
+    desc: document.getElementById('exp-desc').value,
+    notes: document.getElementById('exp-notes').value
+  };
+  if(!e.propId || !e.amount) { alert('Please fill required fields.'); return; }
+  DB.expenses.push(e);
+  closeModal('modal-add-expense'); refreshAll();
+  await saveAndPush('expenses', e);
+};
 
 // ── INIT ───────────────────────────────────────────────────
+function save() { localStorage.setItem('sor_db', JSON.stringify(DB)); }
+function load() {
+  const raw = localStorage.getItem('sor_db');
+  if(raw) { try { DB = JSON.parse(raw); } catch(e){} }
+}
+
 load();
 DB.selectedYear = 2026;
-document.getElementById('cpa-date') && (document.getElementById('cpa-date').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}));
-document.getElementById('cpa-footer-date') && (document.getElementById('cpa-footer-date').textContent = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}));
 
-// Pre-fill today's date in modals
 window.addEventListener('DOMContentLoaded', () => {
   const today = new Date().toISOString().split('T')[0];
   ['prop-date','capex-date','maint-date','exp-date'].forEach(id => {
@@ -1826,8 +2161,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const monthToday = new Date().toISOString().substr(0,7);
   const incM = document.getElementById('income-month');
   if(incM) incM.value = monthToday;
+
+  // If no CLIENT_ID set, skip login screen and run in local-only mode
+  if(!CLIENT_ID) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-root').style.display = 'flex';
+    currentUser = 'local';
+    setSyncStatus('error', 'Local mode — set Client ID to enable sync');
+  }
   refreshAll();
 });
 </script>
+
+<!-- Google API scripts — must load after body -->
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</div><!-- /app-root -->
 </body>
 </html>
